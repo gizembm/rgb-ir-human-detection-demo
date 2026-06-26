@@ -192,7 +192,7 @@ The project investigates the effectiveness of RGB, Thermal, and Early Fusion app
 Computer Engineer
 
 - GitHub: https://github.com/gizembm
-- LinkedIn: https://linkedin.com/in/gizemefe
+- LinkedIn: [https://linkedin.com/in/gizemefe](https://www.linkedin.com/in/gizem-efe-334a31260/)
 
 ---
 
