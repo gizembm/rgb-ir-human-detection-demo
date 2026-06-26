@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İnsan Tespit Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────── -->
+  <header class="header">
+    <div>
+      <p class="header-sub">Düzce Üniversitesi — Bilgisayar Mühendisliği Bitirme Tezi</p>
+      <h1 class="header-title">İnsan Tespit Demo</h1>
+      <p class="header-meta">Gizem Efe &nbsp;|&nbsp; Danışman: Prof. Dr. Pakize Erdoğmuş</p>
+    </div>
+    <div id="status-badge" class="badge badge-idle">Hazır</div>
+  </header>
+
+  <div class="page">
+
+    <!-- ── SATIR 1: MODEL + GÜVEN EŞİĞİ ──────────────── -->
+    <div class="row-control">
+
+      <div class="ctrl-model">
+        <p class="section-label">Model</p>
+        <div class="model-btns" id="model-btns">
+          {% for m in ["YOLOv5s IR","YOLOv5s RGB","Early Fusion","YOLOv26s IR","YOLOv26s RGB","Adaptif","EF Fine-Tuned (NII-CU)"] %}
+          <button class="mbtn {% if m=='Early Fusion' %}active{% endif %}"
+                  data-model="{{ m }}" onclick="selectModel(this)">{{ m }}</button>
+          {% endfor %}
+        </div>
+        <div class="minfo-card">
+          <div class="minfo-left">
+            <p class="minfo-name" id="minfo-name">Early Fusion (EF_gray_ir_blend_04_06)</p>
+            <p class="minfo-desc" id="minfo-desc">En yüksek genel kutu hassasiyeti. Giriş: RGB + IR · Kanal: [Gray | IR | 0.4×Gray+0.6×IR]</p>
+          </div>
+          <div class="minfo-stats">
+            <div class="mstat"><span class="mstat-l">mAP@0.5</span><b class="mstat-v" id="s0">0.969</b></div>
+            <div class="mstat"><span class="mstat-l">mAP@0.5:0.95</span><b class="mstat-v" id="s1">0.650</b></div>
+            <div class="mstat"><span class="mstat-l">Precision</span><b class="mstat-v" id="s2">0.950</b></div>
+            <div class="mstat"><span class="mstat-l">Recall</span><b class="mstat-v" id="s3">0.919</b></div>
+            <div class="mstat"><span class="mstat-l">Parametre</span><b class="mstat-v" id="s4">7.0M</b></div>
+            <div class="mstat"><span class="mstat-l">GFLOPs</span><b class="mstat-v" id="s5">15.8</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-divider"></div>
+
+      <div class="ctrl-conf">
+        <p class="section-label">Güven Eşiği</p>
+        <div class="slider-row">
+          <input type="range" id="conf-slider" min="0.10" max="0.90" step="0.05" value="0.25"
+                 oninput="document.getElementById('conf-val').textContent=parseFloat(this.value).toFixed(2)">
+          <span class="slider-val" id="conf-val">0.25</span>
+        </div>
+        <p class="section-hint">Düşük değer → daha fazla tespit</p>
+      </div>
+
+    </div>
+
+    <!-- ── SATIR 2: GÖRÜNTÜ YÜKLE (tam genişlik) ──────── -->
+    <div class="row-upload card">
+      <p class="section-label">Görüntü Yükle</p>
+      <div class="upload-inner">
+
+        <!-- RGB -->
+        <div class="ubox" id="rgb-box">
+          <p class="ubox-title">RGB Görüntüsü</p>
+          <label for="rgb-file" class="ubox-label">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            <span class="ubox-fname" id="rgb-fname">Dosya seç veya sürükle</span>
+            <span class="ubox-hint">jpg / png</span>
+          </label>
+          <input type="file" id="rgb-file" accept="image/*"
+                 onchange="previewFile(this,'rgb-prev','rgb-fname')">
+          <img id="rgb-prev" class="uprev hidden" alt="RGB önizleme">
+        </div>
+
+        <!-- IR -->
+        <div class="ubox" id="ir-box">
+          <p class="ubox-title">
+            IR Görüntüsü
+            <span class="ubox-badge">Early Fusion / Adaptif için</span>
+          </p>
+          <label for="ir-file" class="ubox-label">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41
+                       M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+            <span class="ubox-fname" id="ir-fname">Dosya seç veya sürükle</span>
+            <span class="ubox-hint">jpg / png</span>
+          </label>
+          <input type="file" id="ir-file" accept="image/*"
+                 onchange="previewFile(this,'ir-prev','ir-fname')">
+          <img id="ir-prev" class="uprev hidden" alt="IR önizleme">
+        </div>
+
+        <!-- Buton -->
+        <div class="upload-action">
+          <button class="detect-btn" id="detect-btn" onclick="runDetect()">
+            Tespit Yap
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SATIR 3: TESPİT SONUCU + ANALİZ yan yana ──── -->
+    <div class="row-result">
+
+      <!-- Tespit sonucu -->
+      <div class="card result-card">
+        <p class="section-label">Tespit Sonucu</p>
+        <div class="result-wrap">
+          <p class="result-placeholder" id="placeholder">
+            Görüntü yükleyip "Tespit Yap" butonuna basın
+          </p>
+          <img id="result-img" class="result-img hidden" alt="Tespit sonucu">
+        </div>
+      </div>
+
+      <!-- Analiz -->
+      <div class="card analiz-card">
+        <p class="section-label">Analiz</p>
+
+        <div class="metrics-grid">
+          <div class="mcard"><span class="mcard-l">Tespit</span><span class="mcard-v" id="m-det">—</span><span class="mcard-u">kişi</span></div>
+          <div class="mcard"><span class="mcard-l">Süre</span><span class="mcard-v" id="m-ms">—</span><span class="mcard-u">ms</span></div>
+          <div class="mcard"><span class="mcard-l">Ort. güven</span><span class="mcard-v" id="m-avg">—</span></div>
+          <div class="mcard"><span class="mcard-l">Maks. güven</span><span class="mcard-v" id="m-max">—</span></div>
+        </div>
+
+        <div class="adaptif-row hidden" id="adaptif-row">
+          <span class="ak">Seçilen mod:</span><span id="adaptif-mode">—</span>
+          <span class="ak" style="margin-left:14px;">Parlaklık:</span><span id="adaptif-bright">—</span>
+        </div>
+
+        <div class="sep"></div>
+
+        <p class="section-label" style="margin-bottom:8px;">Kişi Detayları</p>
+        <div class="person-list" id="person-list">
+          <p class="no-det">Henüz tespit yapılmadı.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- .page -->
+
+  <!-- ── JS ─────────────────────────────────────────── -->
+  <script>
+    const MODEL_INFO = {{ model_info | tojson }};
+    const IR_ONLY  = ["YOLOv5s IR",  "YOLOv26s IR"];
+    const RGB_ONLY = ["YOLOv5s RGB", "YOLOv26s RGB"];
+    const BOTH     = ["Early Fusion", "Adaptif", "EF Fine-Tuned (NII-CU)"];
+    let selectedModel = "Early Fusion";
+
+    function selectModel(btn) {
+      document.querySelectorAll(".mbtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedModel = btn.dataset.model;
+      updateInputs();
+      updateInfo();
+    }
+
+    function updateInputs() {
+      const rgb = document.getElementById("rgb-box");
+      const ir  = document.getElementById("ir-box");
+      if (IR_ONLY.includes(selectedModel)) {
+        rgb.classList.add("hidden"); ir.classList.remove("hidden");
+      } else if (RGB_ONLY.includes(selectedModel)) {
+        rgb.classList.remove("hidden"); ir.classList.add("hidden");
+      } else {
+        rgb.classList.remove("hidden"); ir.classList.remove("hidden");
+      }
+    }
+
+    function updateInfo() {
+      const info = MODEL_INFO[selectedModel] || {};
+      const suffix = selectedModel === "Early Fusion" ? " (EF_gray_ir_blend_04_06)" : "";
+      document.getElementById("minfo-name").textContent = selectedModel + suffix;
+      document.getElementById("minfo-desc").textContent = info.aciklama || "";
+      document.getElementById("s0").textContent = info.map5      || "—";
+      document.getElementById("s1").textContent = info.map595    || "—";
+      document.getElementById("s2").textContent = info.precision || "—";
+      document.getElementById("s3").textContent = info.recall    || "—";
+      document.getElementById("s4").textContent = info.params    || "—";
+      document.getElementById("s5").textContent = info.gflops   || "—";
+    }
+
+    function previewFile(input, prevId, fnameId) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById(prevId);
+        img.src = e.target.result;
+        img.classList.remove("hidden");
+        document.getElementById(fnameId).textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function runDetect() {
+      const rgbFile = document.getElementById("rgb-file").files[0];
+      const irFile  = document.getElementById("ir-file").files[0];
+      const conf    = parseFloat(document.getElementById("conf-slider").value);
+
+      if (IR_ONLY.includes(selectedModel)  && !irFile)           { alert("IR görüntüsü seçin.");             return; }
+      if (RGB_ONLY.includes(selectedModel) && !rgbFile)          { alert("RGB görüntüsü seçin.");            return; }
+      if (BOTH.includes(selectedModel) && (!rgbFile || !irFile)) { alert("Hem RGB hem IR görüntüsü seçin."); return; }
+
+      setStatus("loading");
+      document.getElementById("detect-btn").disabled = true;
+
+      const fd = new FormData();
+      fd.append("model", selectedModel);
+      fd.append("conf",  conf);
+      if (rgbFile) fd.append("rgb_image", rgbFile);
+      if (irFile)  fd.append("ir_image",  irFile);
+
+      try {
+        const res  = await fetch("/detect", { method:"POST", body:fd });
+        const data = await res.json();
+
+        if (data.error) { alert("Hata: " + data.error); setStatus("idle"); return; }
+
+        const img = document.getElementById("result-img");
+        img.src = data.image;
+        img.classList.remove("hidden");
+        document.getElementById("placeholder").classList.add("hidden");
+
+        document.getElementById("m-det").textContent = data.n_det;
+        document.getElementById("m-ms").textContent  = data.elapsed_ms;
+        document.getElementById("m-avg").textContent = data.avg_conf || "—";
+        document.getElementById("m-max").textContent = data.max_conf || "—";
+
+        const arow = document.getElementById("adaptif-row");
+        if (selectedModel === "Adaptif" && data.brightness !== null) {
+          arow.classList.remove("hidden");
+          document.getElementById("adaptif-mode").textContent  = data.selected_mode;
+          document.getElementById("adaptif-bright").textContent = data.brightness;
+        } else {
+          arow.classList.add("hidden");
+        }
+
+        const list = document.getElementById("person-list");
+        list.innerHTML = "";
+        if (data.detections.length > 0) {
+          data.detections.forEach(d => {
+            const w = Math.round(d.score * 100);
+            list.innerHTML += `
+              <div class="prow">
+                <span class="pid">#${String(d.id).padStart(2,"0")}</span>
+                <div class="pbar-wrap"><div class="pbar" style="width:${w}%"></div></div>
+                <span class="pscore">${d.score.toFixed(3)}</span>
+              </div>`;
+          });
+        } else {
+          list.innerHTML = '<p class="no-det">Tespit yapılamadı — güven eşiğini düşürmeyi deneyin.</p>';
+        }
+
+        setStatus("done");
+      } catch(e) {
+        console.error(e);
+        alert("Sunucu hatası.");
+        setStatus("idle");
+      } finally {
+        document.getElementById("detect-btn").disabled = false;
+      }
+    }
+
+    function setStatus(s) {
+      const b = document.getElementById("status-badge");
+      b.className = "badge";
+      if      (s === "loading") { b.classList.add("badge-loading"); b.textContent = "İşleniyor..."; }
+      else if (s === "done")    { b.classList.add("badge-done");    b.textContent = "Tamamlandı";   }
+      else                      { b.classList.add("badge-idle");    b.textContent = "Hazır";        }
+    }
+
+    updateInfo();
+    updateInputs();
+  </script>
+</body>
+</html>
