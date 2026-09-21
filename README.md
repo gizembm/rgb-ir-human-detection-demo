@@ -76,7 +76,7 @@ RGB-IR-Human-Detection-Demo/
 Clone the repository.
 
 ```bash
-git clone https://github.com/yourusername/rgb-ir-human-detection-demo.git
+git clone https://github.com/gizembm/rgb-ir-human-detection-demo.git
 
 cd rgb-ir-human-detection-demo
 ```
@@ -198,6 +198,8 @@ Computer Engineer
 
 ## 📄 License
 
-This project was developed for academic and research purposes.
+The original source code in this repository is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for details.
 
-Commercial use is not permitted without permission.
+Third-party libraries, models, datasets, and other dependencies are subject
+to their respective licenses.
